@@ -1,3 +1,4 @@
 {
-    "CodeGPT.apiKey": "Ollama"
+    "CodeGPT.apiKey": "Ollama",
+    "C_Cpp.default.compilerPath": "c:\\Users\\Administrator\\Documents\\Multi_Rice_Dispensing\\arduino\\FULL_WORKING_CODE_with_GRAMS_SET\\FULL_WORKING_CODE_with_GRAMS_SET.ino"
 }

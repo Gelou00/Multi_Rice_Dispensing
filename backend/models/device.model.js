@@ -13,23 +13,33 @@ isOnline:{
 lastUpdate:{
     type: Number,
     require: true,
-    dafault:0
+    default: 0
 },
-chamber1:{
-    type:Number,
-    require: true,
-    default:0
+owner:{
+        type: mongoose.Types.ObjectId,
+        ref: 'User',
+        required: true
 },
-chamber2:{
-    type:Number,
-    require: true,
-    default:0
+ultrasonic1:{
+
+    type: Number,
+    required: true,
+    default: 0
 },
-chamber2:{
-    type:Number,
-    require: true,
-    default:0
-}
+ultrasonic2:{
+
+    type: Number,
+    required: true,
+    default: 0
+
+},
+ultrasonic3:{
+
+    type: Number,
+    required: true,
+    default: 0
+
+},
 
 });
 

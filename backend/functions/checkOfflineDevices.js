@@ -3,13 +3,13 @@ import Device from '../models/device.model.js';
 
 const checkOfflineDevices = async() => {
     try{
-        const devices = await Device.find({});
+        const devices = await Device.find({"isOnline": true});
         if(!devices instanceof Array || devices.length === 0){
             return;
         }
 
         const timeNow = Date.now();
-        const idleTimeThreshold = 2 * 60 * 1000;
+        const idleTimeThreshold = 30 * 1000;
 
         for(var i=0; i<devices.length; i++){
             const device = devices[i];
@@ -28,4 +28,4 @@ const checkOfflineDevices = async() => {
     }
 }
 
-export default checkOfflineDevices;
+export default checkOfflineDevices
