@@ -6,7 +6,6 @@
 // ================= LCD =================
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// Custom Characters for Smooth 1-Pixel Liquid Flow
 byte p1[8] = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10};
 byte p2[8] = {0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18};
 byte p3[8] = {0x1C, 0x1C, 0x1C, 0x1C, 0x1C, 0x1C, 0x1C, 0x1C};
@@ -26,10 +25,7 @@ Servo s1, s2, s3;
 #define S3_OPEN 65
 #define S3_CLOSE 19
 
-// --- GRAMS CALIBRATION (Adjust ms values based on your motor speed) ---
-unsigned long msFor100g = 1000; // 1 second for 100g (P5)
-unsigned long msFor200g = 2000; // 2 seconds for 200g (P10)
-unsigned long msFor400g = 4000; // 4 seconds for 400g (P20)
+unsigned long msFor100g = 1000; 
 
 // ================= BUTTONS =================
 #define BTN1 11
@@ -37,16 +33,13 @@ unsigned long msFor400g = 4000; // 4 seconds for 400g (P20)
 #define BTN3 13
 
 // ================= COIN SLOT =================
-#define COIN_PIN 2           
+#define COIN_PIN 2            
 #define NEW_COIN_PIN 3       
 volatile int pulseCount = 0;
 volatile unsigned long lastPulseTime = 0;
 bool processingPulses = false;
 
 int pesoBalance = 0;
-#define COST_RICE1 5
-#define COST_RICE2 10
-#define COST_RICE3 20
 
 unsigned long thankYouTimer = 0;
 bool systemReady = false;
@@ -80,21 +73,11 @@ void processCoinAuto(int pulses){
   }
 }
 
-// ================= LIQUID FLOW DISPENSING =================
+// ================= UPDATED DISPENSING LOGIC =================
 void dispenseExact(int servoNum, int openAngle, int closeAngle) {
-  int amountToDispense = pesoBalance; 
-  int grams = 0;
-  unsigned long totalOpenTime = 0;
-
-  // Set grams and timing based on Peso Balance
-  if (amountToDispense == 5) { grams = 100; totalOpenTime = msFor100g; }
-  else if (amountToDispense == 10) { grams = 200; totalOpenTime = msFor200g; }
-  else if (amountToDispense == 20) { grams = 400; totalOpenTime = msFor400g; }
-  else { 
-    // Manual math for other values (e.g., P15 = 300g)
-    grams = (amountToDispense * 100) / 5;
-    totalOpenTime = (amountToDispense * msFor100g) / 5;
-  }
+  int grams = (pesoBalance * 100) / 5;
+  unsigned long totalOpenTime = (pesoBalance * msFor100g) / 5;
+  int amountDispensed = pesoBalance;
   
   currentState = DISPENSING;
   lcd.clear();
@@ -102,7 +85,7 @@ void dispenseExact(int servoNum, int openAngle, int closeAngle) {
   lcd.print("Grams: "); 
   lcd.print(grams);
   lcd.print("g (P");
-  lcd.print(amountToDispense);
+  lcd.print(amountDispensed);
   lcd.print(")");
   
   Servo *selectedServo;
@@ -110,7 +93,9 @@ void dispenseExact(int servoNum, int openAngle, int closeAngle) {
   else if(servoNum == 2) { s2.attach(SERVO2_PIN); selectedServo = &s2; }
   else { s3.attach(SERVO3_PIN); selectedServo = &s3; }
 
+  // FIX: Force a fast open to overcome rice weight/friction
   selectedServo->write(openAngle);
+  delay(50); // Small delay to ensure the pulse is sent immediately
   
   unsigned long startDispense = millis();
   int lastPixels = -1;
@@ -136,7 +121,7 @@ void dispenseExact(int servoNum, int openAngle, int closeAngle) {
   }
 
   selectedServo->write(closeAngle);
-  delay(500); 
+  delay(600); // Increased delay to ensure it closes fully before detaching
   selectedServo->detach();
   
   pesoBalance = 0; 
@@ -208,9 +193,9 @@ void loop(){
       lcd.setCursor(0, 1);
       lcd.print("  Select Rice   "); 
       
-      if(digitalRead(BTN1) == LOW && pesoBalance >= COST_RICE1) dispenseExact(1, S1_OPEN, S1_CLOSE);
-      else if(digitalRead(BTN2) == LOW && pesoBalance >= COST_RICE2) dispenseExact(2, S2_OPEN, S2_CLOSE);
-      else if(digitalRead(BTN3) == LOW && pesoBalance >= COST_RICE3) dispenseExact(3, S3_OPEN, S3_CLOSE);
+      if(digitalRead(BTN1) == LOW && pesoBalance > 0) dispenseExact(1, S1_OPEN, S1_CLOSE);
+      else if(digitalRead(BTN2) == LOW && pesoBalance > 0) dispenseExact(2, S2_OPEN, S2_CLOSE);
+      else if(digitalRead(BTN3) == LOW && pesoBalance > 0) dispenseExact(3, S3_OPEN, S3_CLOSE);
       break;
 
     case THANKYOU:
@@ -219,7 +204,7 @@ void loop(){
         lcd.setCursor(0, 0);
         lcd.print("    SUCCESS!    ");
         lcd.setCursor(0, 1);
-        lcd.print("   THANK YOU    ");
+        lcd.print("    THANK YOU    ");
         stateInitialized = true;
       }
       if(millis() - thankYouTimer > 3000) {
